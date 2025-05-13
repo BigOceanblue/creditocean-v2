@@ -3,21 +3,27 @@ import pandas as pd
 
 st.set_page_config(page_title="CreditOcean V2", layout="centered")
 
-primary_color = "#0077b6"
-header_color = "#023e8a"
-success_color = "#2a9d8f"
+# Styling colors
+primary = "#0077b6"
+accent = "#90e0ef"
+success = "#2a9d8f"
 
-st.markdown(f"<h1 style='color: {header_color};'>🌊 CreditOcean V2 – Credit Calculator</h1>", unsafe_allow_html=True)
-st.markdown(f"<p style='color: #444;'>Upload an Excel file with contact data and get a detailed credit breakdown based on actual datapoints.</p>", unsafe_allow_html=True)
+# Header UI
+st.markdown(f"""
+    <div style='text-align:center;'>
+        <h1 style='color:{primary};margin-bottom:0;'>🌊 CreditOcean V2</h1>
+        <h3 style='color:#555;font-weight:normal;'>Upload your Excel and calculate real credit usage</h3>
+    </div>
+""", unsafe_allow_html=True)
 
-uploaded_file = st.file_uploader("📤 Upload Excel (.xlsx or .xls)", type=["xlsx", "xls"])
+uploaded_file = st.file_uploader("📤 Upload Excel file", type=["xlsx", "xls"])
 
 if uploaded_file:
     try:
         df = pd.read_excel(uploaded_file)
-
-        st.markdown("### 📋 Preview of Uploaded Data")
-        st.dataframe(df.head(), height=200)
+        st.markdown("---")
+        st.subheader("📋 Preview of Uploaded Data")
+        st.dataframe(df.head(), use_container_width=True)
 
         credit_rules = {
             "domain": 3,
@@ -68,13 +74,15 @@ if uploaded_file:
             total_credits += credits
             credit_details.append(entry)
 
-        st.markdown(f"<h3 style='color:{success_color};'>📊 Credit Summary</h3>", unsafe_allow_html=True)
-        st.success(f"**Total Entries:** {len(credit_details)}")
-        st.success(f"**Total Credits:** {total_credits} credits")
+        st.markdown("---")
+        st.subheader("📊 Credit Summary")
+        st.success(f"Total Rows Analyzed: {len(credit_details)}")
+        st.success(f"Total Credits Used: {total_credits}")
 
-        st.markdown("### 📄 Detailed Credit Breakdown")
-        breakdown_df = pd.DataFrame(credit_details)
-        st.dataframe(breakdown_df)
+        with st.expander("🔍 Show Detailed Credit Breakdown"):
+            st.dataframe(pd.DataFrame(credit_details), use_container_width=True)
 
     except Exception as e:
-        st.error(f"❌ Error reading Excel file: {str(e)}")
+        st.error(f"❌ Could not process file: {str(e)}")
+else:
+    st.info("👈 Upload your Excel file to begin calculating credits.")
