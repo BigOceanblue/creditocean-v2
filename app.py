@@ -86,4 +86,4 @@ if uploaded_file:
         st.error(f"❌ Could not process file: {str(e)}")
 else:
     st.info("👈 Upload your Excel file to begin calculating credits.")
-update app.py with design + credit logic
+
