@@ -5,18 +5,18 @@ st.set_page_config(page_title="CreditOcean V2", layout="centered")
 
 # Styling colors
 primary = "#0077b6"
-accent = "#90e0ef"
 success = "#2a9d8f"
 
-# Header UI
+# Header
 st.markdown(f"""
     <div style='text-align:center;'>
         <h1 style='color:{primary};margin-bottom:0;'>🌊 CreditOcean V2</h1>
-        <h3 style='color:#555;font-weight:normal;'>Upload your Excel and calculate real credit usage</h3>
+        <h3 style='color:#555;font-weight:normal;'>Upload your Excel file to calculate real credit usage</h3>
     </div>
 """, unsafe_allow_html=True)
 
-uploaded_file = st.file_uploader("📤 Upload Excel file", type=["xlsx", "xls"])
+# Upload
+uploaded_file = st.file_uploader("📤 Upload Excel (.xlsx)", type=["xlsx", "xls"])
 
 if uploaded_file:
     try:
@@ -76,14 +76,13 @@ if uploaded_file:
 
         st.markdown("---")
         st.subheader("📊 Credit Summary")
-        st.success(f"Total Rows Analyzed: {len(credit_details)}")
+        st.success(f"Total Contacts: {len(credit_details)}")
         st.success(f"Total Credits Used: {total_credits}")
 
-        with st.expander("🔍 Show Detailed Credit Breakdown"):
+        with st.expander("🔍 Show Detailed Breakdown"):
             st.dataframe(pd.DataFrame(credit_details), use_container_width=True)
 
     except Exception as e:
-        st.error(f"❌ Could not process file: {str(e)}")
+        st.error(f"❌ Could not read file: {str(e)}")
 else:
-    st.info("👈 Upload your Excel file to begin calculating credits.")
-
+    st.info("👈 Upload an Excel file to start.")
