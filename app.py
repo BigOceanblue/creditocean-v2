@@ -1,28 +1,27 @@
 import streamlit as st
 import pandas as pd
+from io import BytesIO
 
 st.set_page_config(page_title="CreditOcean V2", layout="centered")
 
-# Styling colors
+# Styling
 primary = "#0077b6"
 success = "#2a9d8f"
 
-# Header
 st.markdown(f"""
     <div style='text-align:center;'>
-        <h1 style='color:{primary};margin-bottom:0;'>🌊 CreditOcean V2</h1>
-        <h3 style='color:#555;font-weight:normal;'>Upload your Excel file to calculate real credit usage</h3>
+        <h1 style='color:{primary};'>🌊 CreditOcean V2</h1>
+        <h3 style='color:#444;'>Upload Excel to calculate credits and download results</h3>
     </div>
 """, unsafe_allow_html=True)
 
-# Upload
-uploaded_file = st.file_uploader("📤 Upload Excel (.xlsx)", type=["xlsx", "xls"])
+uploaded_file = st.file_uploader("📤 Upload Excel file (.xlsx)", type=["xlsx"])
 
 if uploaded_file:
     try:
         df = pd.read_excel(uploaded_file)
-        st.markdown("---")
-        st.subheader("📋 Preview of Uploaded Data")
+
+        st.markdown("### 📋 Data Preview")
         st.dataframe(df.head(), use_container_width=True)
 
         credit_rules = {
@@ -37,52 +36,71 @@ if uploaded_file:
         seen_domains = set()
         seen_companies = set()
         total_credits = 0
-        credit_details = []
+        credit_rows = []
 
         for _, row in df.iterrows():
             entry = {k: 0 for k in credit_rules}
 
-            domain = str(row.get("Domain", "")).strip().lower()
+            domain = str(row.get("Domain", row.get("Domæne", ""))).strip().lower()
             if domain and domain not in seen_domains:
                 entry["domain"] = 1
                 seen_domains.add(domain)
 
-            company = str(row.get("Company Name", "")).strip().lower()
+            company = str(row.get("Company Name", row.get("Virksomhed", ""))).strip().lower()
             if company and company not in seen_companies:
                 entry["company"] = 1
                 seen_companies.add(company)
 
-            title = str(row.get("Contact Title", "")).strip()
-            name = str(row.get("Contact Name", "")).strip()
+            title = str(row.get("Contact Title", row.get("Stilling", ""))).strip()
+            name = str(row.get("Contact Name", row.get("Navn", ""))).strip()
             if title and name:
                 entry["contact"] = 1
 
-            email = str(row.get("Company Email", "")).strip().lower()
-            if email and '@' in email and not email.startswith(("info@", "kontakt@", "sales@", "support@")):
+            email = str(row.get("Company Email", row.get("E-mail", ""))).strip().lower()
+            if email and '@' in email and not email.startswith(("info@", "kontakt@", "support@", "sales@")):
                 entry["email"] = 1
 
-            phone = str(row.get("Mobile", "") or row.get("Direct Number", "")).strip()
+            phone = str(row.get("Mobile", row.get("Direct Number", row.get("Telefon", "")))).strip()
             if phone:
                 entry["phone"] = 1
 
-            linkedin = str(row.get("LinkedIn URL", "")).strip()
+            linkedin = str(row.get("LinkedIn URL", row.get("LinkedIn", ""))).strip()
             if "/in/" in linkedin:
                 entry["linkedin"] = 1
 
-            credits = sum(entry[k] * credit_rules[k] for k in entry)
+            credits = sum(entry[k] * credit_rules[k] for k in credit_rules)
             entry["credits"] = credits
             total_credits += credits
-            credit_details.append(entry)
+
+            entry["name"] = name
+            entry["title"] = title
+            entry["email_raw"] = email
+            entry["mobile_raw"] = phone
+            entry["company"] = company
+            credit_rows.append(entry)
 
         st.markdown("---")
         st.subheader("📊 Credit Summary")
-        st.success(f"Total Contacts: {len(credit_details)}")
-        st.success(f"Total Credits Used: {total_credits}")
+        st.success(f"Total contacts analyzed: {len(credit_rows)}")
+        st.success(f"Total credits used: {total_credits}")
+        st.success(f"Total price: {total_credits * 3} DKK")
 
-        with st.expander("🔍 Show Detailed Breakdown"):
-            st.dataframe(pd.DataFrame(credit_details), use_container_width=True)
+        result_df = pd.DataFrame(credit_rows)
+
+        with st.expander("🔍 Show credit breakdown"):
+            st.dataframe(result_df, use_container_width=True)
+
+        def to_excel(df):
+            output = BytesIO()
+            with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                df.to_excel(writer, index=False, sheet_name='CreditData')
+            return output.getvalue()
+
+        excel_data = to_excel(result_df)
+        st.download_button("⬇️ Download Excel result", data=excel_data, file_name="credit_results.xlsx")
 
     except Exception as e:
-        st.error(f"❌ Could not read file: {str(e)}")
+        st.error(f"❌ Error reading file: {str(e)}")
+
 else:
-    st.info("👈 Upload an Excel file to start.")
+    st.info("👈 Please upload an Excel file to begin.")
